@@ -1,17 +1,6 @@
----
-title: "KI for ingeniører – modulguide"
-subtitle: "Innføringsmodul i ING100 – Ingeniørfaglig innføringsemne, Høgskulen på Vestlandet"
-date: today
-lang: nb
-format:
-  typst:
-    papersize: a4
-    margin:
-      x: 2.2cm
-      y: 2.4cm
----
+# KI for ingeniører – modulguide
 
-<!-- PDF til utdeling: quarto render KURSGUIDE.md --to typst -->
+*Innføringsmodul i ING100 – Ingeniørfaglig innføringsemne, Høgskulen på Vestlandet*
 
 Denne guiden gir en samlet oversikt over KI-modulen i
 [ING100](https://www.hvl.no/studier/studieprogram/emne/ING100) – for
