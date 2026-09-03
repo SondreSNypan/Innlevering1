@@ -693,19 +693,58 @@ Demoene kaller en språkmodell direkte fra nettleseren. Nøkkelen lagres bare i 
     <input type="password" id="api-key" placeholder="sk-... eller sk-or-...">
     <span id="key-status" class="status-dot">●</span>
   </div>
+  <label for="default-model">Standardmodell</label>
+  <select id="default-model" data-model-select></select>
   <div id="key-hint" class="microcopy"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
 <script>
 window.API_KEY = "";
 window.SYMPY_PROMISE = null;
+window.DEFAULT_MODEL = "openai/gpt-4.1-mini";
+const NORWEGIAN_INSTRUCTION = "Svar på norsk (bokmål) når det er faglig mulig, med mindre brukeren eksplisitt ber om et annet språk.";
+const MODEL_CATALOG = [
+  { id: "openai/gpt-4.1-nano", label: "GPT-4.1 nano", openai: true },
+  { id: "openai/gpt-4.1-mini", label: "GPT-4.1 mini", openai: true },
+  { id: "openai/gpt-4.1", label: "GPT-4.1", openai: true },
+  { id: "openai/gpt-5-mini", label: "GPT-5 mini", openai: true },
+  { id: "openai/gpt-5.6-sol", label: "GPT-5.6 Sol", openai: true },
+  { id: "mistralai/ministral-3b-2512", label: "Ministral 3 3B", openai: false },
+  { id: "google/gemma-3-12b-it", label: "Gemma 3 12B", openai: false },
+  { id: "qwen/qwen3.5-35b-a3b", label: "Qwen 3.5 35B A3B", openai: false },
+  { id: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2", openai: false },
+  { id: "meta-llama/llama-3.3-70b-instruct", label: "Llama 3.3 70B", openai: false }
+];
+function modelInfo(model) {
+  return MODEL_CATALOG.find(candidate => candidate.id === model);
+}
 function apiConfig(model) {
   const key = window.API_KEY;
-  if (key.startsWith("sk-or-")) return { url: "https://openrouter.ai/api/v1/chat/completions", model: model };
-  if (key.startsWith("sk-")) return { url: "https://api.openai.com/v1/chat/completions", model: model.replace(/^openai\//, "") };
+  const info = modelInfo(model);
+  if (!info) return null;
+  if (key.startsWith("sk-or-")) return { url: "https://openrouter.ai/api/v1/chat/completions", model, provider: "openrouter" };
+  if (key.startsWith("sk-") && info.openai) return { url: "https://api.openai.com/v1/chat/completions", model: model.replace(/^openai\//, ""), provider: "openai" };
   return null;
 }
+function selectedModel(selectId = "default-model") {
+  return document.getElementById(selectId)?.value || window.DEFAULT_MODEL;
+}
 document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("select[data-model-select]").forEach(select => {
+    const preferred = select.dataset.default || window.DEFAULT_MODEL;
+    select.replaceChildren(...MODEL_CATALOG.map(model => {
+      const option = document.createElement("option");
+      option.value = model.id;
+      option.textContent = model.label + (model.openai ? " · OpenAI/OpenRouter" : " · OpenRouter");
+      return option;
+    }));
+    select.value = preferred;
+  });
+  const defaultSelect = document.getElementById("default-model");
+  defaultSelect?.addEventListener("change", event => {
+    window.DEFAULT_MODEL = event.target.value;
+    document.querySelectorAll("select[data-follow-default]").forEach(select => { select.value = window.DEFAULT_MODEL; });
+  });
   const input = document.getElementById("api-key");
   if (!input) return;
   input.addEventListener("input", event => {
@@ -736,7 +775,10 @@ window.callModel = async function(model, messages, outputId, usageId, resultMode
   }
   const config = apiConfig(model);
   if (!config) {
-    output.textContent = "Ukjent nøkkelformat.";
+    const info = modelInfo(model);
+    output.textContent = info && !info.openai && window.API_KEY.startsWith("sk-")
+      ? info.label + " krever en OpenRouter-nøkkel."
+      : "Ukjent nøkkelformat eller modell.";
     return;
   }
   output.classList.add("loading");
@@ -746,7 +788,11 @@ window.callModel = async function(model, messages, outputId, usageId, resultMode
     const response = await fetch(config.url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.API_KEY },
-      body: JSON.stringify({ model: config.model, messages: messages, max_tokens: resultMode === "integer" ? 80 : 800 })
+      body: JSON.stringify({
+        model: config.model,
+        messages: [{ role: "system", content: NORWEGIAN_INSTRUCTION }, ...messages],
+        [config.provider === "openai" ? "max_completion_tokens" : "max_tokens"]: resultMode === "integer" ? 1200 : 800
+      })
     });
     output.classList.remove("loading");
     if (!response.ok) {
@@ -759,7 +805,9 @@ window.callModel = async function(model, messages, outputId, usageId, resultMode
     }
     const data = await response.json();
     const content = data.choices[0].message.content;
-    if (resultMode === "integer") {
+    if (content == null) {
+      output.textContent = "Modellen ga ikke noe tekstsvar (kanskje pga. resonneringstokens). Prøv igjen eller velg en annen modell.";
+    } else if (resultMode === "integer") {
       const finalMatch = content.match(/FINAL\s*:\s*(-?\d+)/i);
       const integers = content.match(/-?\d+/g);
       output.textContent = finalMatch ? finalMatch[1] : integers ? integers[integers.length - 1] : "Intet heltall funnet";
@@ -818,14 +866,21 @@ str(sp.simplify(sp.Rational(65, 4146) * i11 / i5**2))
   }
   return { ok: false, error: "Ukjent verktøy: " + name };
 }
-window.runMeaningWithTools = async function(outputId, usageId) {
+window.runMeaningWithTools = async function(outputId, usageId, model = window.DEFAULT_MODEL) {
   const output = document.getElementById(outputId);
   const usage = document.getElementById(usageId);
   if (!window.API_KEY) {
     output.textContent = "Lim inn en API-nøkkel på koble-til-foilen først.";
     return;
   }
-  const config = apiConfig("openai/gpt-4o");
+  const config = apiConfig(model);
+  if (!config) {
+    const info = modelInfo(model);
+    output.textContent = info && !info.openai && window.API_KEY.startsWith("sk-")
+      ? info.label + " krever en OpenRouter-nøkkel."
+      : "Ukjent nøkkelformat eller modell.";
+    return;
+  }
   const tools = [
     {
       type: "function",
@@ -850,6 +905,7 @@ window.runMeaningWithTools = async function(outputId, usageId) {
     }
   ];
   const messages = [
+    { role: "system", content: NORWEGIAN_INSTRUCTION },
     {
       role: "system",
       content: "Du styrer en verktøydemo. Du SKAL: (1) kalle evaluate_bose_integral med power=5, (2) kalle samme verktøy med power=11, og (3) først deretter kalle simplify_meaning_ratio. Ikke regn selv og ikke skriv en utledning."
@@ -890,7 +946,13 @@ window.runMeaningWithTools = async function(outputId, usageId) {
       const response = await fetch(config.url, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.API_KEY },
-        body: JSON.stringify({ model: config.model, messages, tools: availableTools, tool_choice: "required", parallel_tool_calls: false, max_tokens: 300 })
+        body: JSON.stringify({
+          model: config.model,
+          messages,
+          tools: availableTools,
+          tool_choice: "required",
+          [config.provider === "openai" ? "max_completion_tokens" : "max_tokens"]: 500
+        })
       });
       if (!response.ok) throw new Error("HTTP " + response.status + ": " + (await response.text()).slice(0, 180));
       const data = await response.json();
@@ -930,10 +992,7 @@ Bruk en nøkkel med lav kostnadsgrense. Ikke del den. Slett den etter forelesnin
 <div class="demo-shell">
   <div class="control-row">
     <input id="q1" value="Hva er 417 × 383? Svar kun med tallet.">
-    <select id="m1">
-      <option value="openai/gpt-4o-mini">gpt-4o-mini</option>
-      <option value="openai/gpt-4o">gpt-4o</option>
-    </select>
+    <select id="m1" data-model-select data-follow-default></select>
     <button onclick="callModel(document.getElementById('m1').value,[{role:'user',content:document.getElementById('q1').value}],'out1','tok1')">Spør modellen</button>
   </div>
   <div id="out1" class="llm-out"></div>
@@ -953,7 +1012,7 @@ Fasit: **159 711**. Prøv større tall. Legg merke til hvordan modellen uttrykke
   <textarea id="sys2">Du er en matematikklærer. Forklar hvert steg pedagogisk. Oppgi hvilke regler du bruker. Skriv matematikk som LaTeX. Hvis du er usikker, si det.</textarea>
   <div class="control-row">
     <input id="q2" value="Deriver f(x) = x² sin(x)">
-    <button onclick="callModel('openai/gpt-4o-mini',[{role:'system',content:document.getElementById('sys2').value},{role:'user',content:document.getElementById('q2').value}],'out2','tok2')">Kjør</button>
+    <button onclick="callModel(window.DEFAULT_MODEL,[{role:'system',content:document.getElementById('sys2').value},{role:'user',content:document.getElementById('q2').value}],'out2','tok2')">Kjør</button>
   </div>
   <div id="out2" class="llm-out scroll-output"></div>
   <div id="tok2" class="usage-line"></div>
@@ -964,23 +1023,23 @@ Fasit: **159 711**. Prøv større tall. Legg merke til hvordan modellen uttrykke
 Slett systemprompten og kjør igjen. Hva forsvant? Ikke nødvendigvis svaret — men **etterprøvbarheten**.
 :::
 
-## Demo 3 — Modellduell {.demo-slide}
+## Demo 3 — Modellduell {.demo-slide .duel-slide}
 
 ```{=html}
 <div class="demo-shell">
-  <div class="control-row">
-    <input id="q3" value="Løs differensialligningen y'' + 4y = 0. Forklar stegene.">
-    <button onclick="callModel('openai/gpt-4o-mini',[{role:'user',content:document.getElementById('q3').value}],'out3a','tok3a');callModel('openai/gpt-4o',[{role:'user',content:document.getElementById('q3').value}],'out3b','tok3b')">Start duellen</button>
+  <textarea id="q3" class="puzzle-text" rows="4">Peder, Marte og Lars er ingeniørstudenter som testet hver sin app for innlevering 1. Vi antar at de som består innlevering 1 alltid snakker sant, mens de som ikke består alltid lyver. Peder sa: «Minst én av de to andre besto ikke.» Marte sa: «Peder og jeg fikk samme resultat.» Lars sa: «Nøyaktig én av oss tre besto.» Hvem besto?</textarea>
+  <div class="control-row centered">
+    <button onclick="callModel(selectedModel('m3a'),[{role:'user',content:document.getElementById('q3').value}],'out3a','tok3a');callModel(selectedModel('m3b'),[{role:'user',content:document.getElementById('q3').value}],'out3b','tok3b')">Start duellen</button>
   </div>
   <div class="duel-grid">
-    <div><h3>Rask og billig</h3><div id="out3a" class="llm-out duel-output"></div><div id="tok3a" class="usage-line"></div></div>
-    <div><h3>Sterkere modell</h3><div id="out3b" class="llm-out duel-output"></div><div id="tok3b" class="usage-line"></div></div>
+    <div><select id="m3a" data-model-select data-follow-default></select><div id="out3a" class="llm-out duel-output"></div><div id="tok3a" class="usage-line"></div></div>
+    <div><select id="m3b" data-model-select data-default="openai/gpt-5.6-sol"></select><div id="out3b" class="llm-out duel-output"></div><div id="tok3b" class="usage-line"></div></div>
   </div>
 </div>
 ```
 
 ::: {.answer-reveal .fragment}
-Fasit: $y=C_1\cos(2x)+C_2\sin(2x)$. Sammenlign kvalitet, tid og tokens.
+Fasit: **Peder og Marte besto, Lars besto ikke.** Martes utsagn gir at Peder besto uansett. Da kan Lars ikke snakke sant, og siden Lars lyver, besto flere enn én.
 :::
 
 ## Demo 4 — Samme spørsmål, ulik arbeidsmåte {.demo-slide}
@@ -989,8 +1048,8 @@ Fasit: $y=C_1\cos(2x)+C_2\sin(2x)$. Sammenlign kvalitet, tid og tokens.
 <div class="demo-shell">
   <div class="demo-method-note">Samme skjulte integral. Venstre genererer ett tall; høyre lar modellen be SymPy om tre verktøykall.</div>
   <div class="control-row centered">
-    <button class="secondary" onclick="callModel('openai/gpt-4o',[{role:'system',content:'Regn uten kalkulator, kode eller andre verktøy. Ikke vis utledning eller forklaring. Svar i formatet FINAL: heltall.'},{role:'user',content:'La s(t)=t^5/(exp(t)-1). Finn nærmeste heltall til (65/4146) ganger integralet fra 0 til uendelig av t^6*s(t) dt, delt på kvadratet av integralet fra 0 til uendelig av s(t) dt. Ikke bruk verktøy. Svar bare FINAL: heltall.'}],'out4a','tok4a','integer')">Modellen svarer direkte</button>
-    <button onclick="runMeaningWithTools('out4b','tok4b')">Modell + SymPy-verktøy</button>
+    <button class="secondary" onclick="callModel(window.DEFAULT_MODEL,[{role:'system',content:'Regn uten kalkulator, kode eller andre verktøy. Ikke vis utledning eller forklaring. Svar i formatet FINAL: heltall.'},{role:'user',content:'La s(t)=t^5/(exp(t)-1). Finn nærmeste heltall til (65/4146) ganger integralet fra 0 til uendelig av t^6*s(t) dt, delt på kvadratet av integralet fra 0 til uendelig av s(t) dt. Ikke bruk verktøy. Svar bare FINAL: heltall.'}],'out4a','tok4a','integer')">Modellen svarer direkte</button>
+    <button onclick="runMeaningWithTools('out4b','tok4b',window.DEFAULT_MODEL)">Modell + SymPy-verktøy</button>
   </div>
   <div class="duel-grid">
     <div><h3>Språkmodell</h3><div id="out4a" class="llm-out compact-output"></div><div id="tok4a" class="usage-line"></div></div>
@@ -1310,19 +1369,22 @@ En modell har ingen autorisasjon, ingen samvittighet og intet profesjonsansvar. 
 
 ## Ansvar når noe går galt {.hammurabi-slide}
 
-:::: {.columns}
-::: {.column width="48%"}
-- Det eldste kjente regelverket for byggingeniører finner vi i Hammurabis lover.
-- Fra det gamle Babylonia, om lag 1770 år før Kristus.
-- Lovens § 229 lød slik (Harper's oversettelse fra 1904):
+::: {.hammurabi-stage}
+<ul class="hammurabi-intro">
+<li class="fragment" data-fragment-index="0">Det eldste kjente regelverket for byggingeniører finner vi i Hammurabis lover.</li>
+<li class="fragment" data-fragment-index="1">Fra det gamle Babylonia, om lag 1770 år før Kristus.</li>
+<li class="fragment" data-fragment-index="2">Lovens § 229 lød slik (Harper's oversettelse fra 1904):</li>
+</ul>
 
-> “If a builder build a house for a man and do not make its construction firm, and the house which he has built collapse and cause the death of the owner of the house, that builder shall be put to death.”
+<blockquote class="hammurabi-quote fragment" data-fragment-index="3">
+“If a builder builds a house for a man and do not make its construction firm, and the house which he has built collapse and cause the death of the owner of the house, that builder shall be put to death.”
+</blockquote>
+
+<ul class="hammurabi-conclusion">
+<li class="fragment" data-fragment-index="4">Selv om straffene har blitt mindre strenge, er ansvarsprinsippet like grunnleggende i dag.</li>
+<li class="fragment" data-fragment-index="5">Ansvar som skal <strong>forebygge</strong> baserer seg på risikovurdering, mens ansvaret når noe går galt baserer seg på <strong>faktiske konsekvenser</strong>.</li>
+</ul>
 :::
-::: {.column width="48%"}
-- Selv om straffene har blitt mindre strenge, er ansvarsprinsippet like grunnleggende i dag.
-- Ansvar som skal **forebygge** baserer seg på risikovurdering, mens ansvaret når noe går galt baserer seg på **faktiske konsekvenser**.
-:::
-::::
 
 ## Etiske spørsmål bygger naturlig videre på funksjonelle og juridiske spørsmål
 
