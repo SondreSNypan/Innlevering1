@@ -44,10 +44,10 @@ API-kostnad (kjøres manuelt av læreren når sensur faktisk skjer).
 
 | Kriterium | Bestått krever | Status | Begrunnelse |
 |---|---|---|---|
-| Kalkulator-analogi | Egen, begrunnet stillingtagen – ikke bare gjengivelse | | |
-| Hva kreves for å oppdage feil | Konkret, koblet til egne funn fra Del B | | |
-| Tillit ("dimensjonere en bro") | Klar begrunnet posisjon, ikke bare "det kommer an på" uten videre | | |
-| Hva betyr "flink til å kode" i 2026? | Egen refleksjon, ikke oppramsing av kjente KI-nyheter | | |
+| Hva kan MatteHjelpen brukes til? | Konkret drøfting av gruppens valg og av styrker, svakheter og aktuelle bruksområder for det de har bygget | | |
+| Hva kreves for å oppdage feil? | Konkret, koblet til funn fra Del B | | |
+| Kan vi ha tillit til svarene fra MatteHjelpen? | Klar, begrunnet vurdering basert på gruppens egen versjon og egne testresultater | | |
+| Kan vi ha tillit til koden og ta ansvar for appen? | Refleksjon over hvor godt gruppen forstår koden, hvilke feil og konsekvenser de må kunne håndtere, og hva som kreves før appen eventuelt gjøres tilgjengelig for andre studenter på nettet | | |
 
 ## Samlet tilbakemelding (fylles ut til slutt)
 

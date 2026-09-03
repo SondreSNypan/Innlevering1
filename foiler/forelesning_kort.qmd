@@ -421,10 +421,13 @@ Den er ikke en tradisjonell database eller kalkulator.
 ## Hvordan velges neste token?
 
 ::: {.selection-demo}
-<div class="selection-wheel">
-  <span style="--share:91" class="france">Frankrike</span>
-  <span style="--share:4" class="spain">Spania</span>
-  <span style="--share:5" class="rest">andre</span>
+<div class="selection-visual">
+  <div class="selection-wheel"></div>
+  <div class="selection-legend" aria-label="Fargeforklaring for sannsynlighetsfordelingen">
+  <div><i class="swatch-france"></i><span>Frankrike</span><b>91 %</b></div>
+  <div><i class="swatch-spain"></i><span>Spania</span><b>4 %</b></div>
+  <div><i class="swatch-rest"></i><span>andre</span><b>5 %</b></div>
+  </div>
 </div>
 <div class="selection-copy">
   <b>1. Velg alltid toppen</b>
@@ -482,8 +485,8 @@ Hver dimensjon bidrar litt. Avstanden samler forskjellene til **ett tall**. I pr
   <i class="concept geography muted" style="--x:34%;--y:55%">Spania</i>
   <i class="concept math" style="--x:73%;--y:72%">derivere</i>
   <i class="concept math muted" style="--x:84%;--y:61%">integrere</i>
-  <i class="concept math muted" style="--x:69%;--y:51%">funksjon</i>
-  <i class="concept structure" style="--x:68%;--y:19%">hovedstad</i>
+  <i class="concept math muted" style="--x:69%;--y:58%">funksjon</i>
+  <i class="concept structure" style="--x:68%;--y:24%">hovedstad</i>
   <i class="concept structure muted" style="--x:82%;--y:29%">land</i>
 </div>
 <div class="vector-copy">
@@ -504,7 +507,6 @@ Plasseringen er en pedagogisk illustrasjon — ikke reelle modelldata.
 <div class="context-sentence">
   <span>Studenten</span><span>løste</span><span class="focus">den</span><span>med</span><span class="target">Python</span>
 </div>
-<div class="attention-links"><i></i><i></i><i></i></div>
 <div class="attention-result">
   <span>Oppmerksomhet</span>
   <b>Hvilke tidligere tokens er relevante akkurat nå?</b>

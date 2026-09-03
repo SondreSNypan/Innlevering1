@@ -641,6 +641,8 @@ $code-block-border-color: #24485d;
   margin: 32px 0 22px;
 }
 
+.selection-visual { display: grid; gap: 12px; }
+
 .selection-wheel {
   position: relative;
   width: 285px;
@@ -651,11 +653,15 @@ $code-block-border-color: #24485d;
   box-shadow: inset 0 0 0 34px var(--paper), var(--shadow);
 }
 
-.selection-wheel::after { content: "vektet trekning"; position: absolute; inset: 38%; display: grid; place-items: center; color: var(--navy-700); font: 0.48em/1.2 monospace; text-align: center; }
-.selection-wheel span { position: absolute; z-index: 1; padding: 5px 8px; color: var(--white); background: var(--navy-900); font: 0.48em monospace; }
-.selection-wheel .france { left: 64%; top: 17%; }
-.selection-wheel .spain { left: 67%; bottom: 15%; }
-.selection-wheel .rest { left: 3%; bottom: 20%; }
+.selection-wheel::after { content: "vektet trekning"; position: absolute; inset: 34%; display: grid; place-items: center; overflow-wrap: normal; color: var(--navy-700); font: 0.48em/1.2 monospace; text-align: center; }
+.selection-legend { display: grid; gap: 5px; width: 285px; margin: auto; font: 0.46em monospace; }
+.selection-legend div { display: grid; grid-template-columns: 15px 1fr auto; gap: 9px; align-items: center; }
+.selection-legend i { width: 15px; height: 15px; }
+.selection-legend span { white-space: nowrap; }
+.selection-legend b { color: var(--navy-700); }
+.selection-legend .swatch-france { background: var(--coral); }
+.selection-legend .swatch-spain { background: var(--gold); }
+.selection-legend .swatch-rest { background: var(--teal); }
 .selection-copy { font-size: 0.68em; }
 .selection-copy b { display: block; margin-top: 20px; color: var(--navy-800); font-size: 1.1em; }
 .selection-copy p { margin: 7px 0 18px; color: var(--muted); line-height: 1.4; }
@@ -706,7 +712,7 @@ $code-block-border-color: #24485d;
 .point.madrid { left: 43%; top: 45%; background: var(--gold); }
 .point.derivative { right: 5%; bottom: 16%; color: var(--white); background: var(--coral); }
 .distance-near, .distance-far { position: absolute; color: #cfe0e6; font: 0.48em monospace; }
-.distance-near { left: 25%; top: 52%; }
+.distance-near { left: 25%; top: 58%; }
 .distance-far { right: 21%; top: 35%; }
 .distance-formula { font-size: 0.7em; text-align: center; }
 .distance-formula p { color: var(--muted); font-size: 0.76em; }
@@ -742,7 +748,7 @@ $code-block-border-color: #24485d;
 .cluster-places { inset: 9% 51% 29% 5%; }
 .cluster-math { inset: 43% 4% 6% 56%; }
 .cluster-language { inset: 8% 5% 52% 55%; }
-.concept { position: absolute; left: var(--x); top: var(--y); z-index: 1; padding: 8px 12px; color: var(--navy-950); background: var(--mint); font: normal 700 0.54em monospace; transform: translate(-50%, -50%); box-shadow: 0 8px 20px rgba(0,0,0,0.24); }
+.concept { position: absolute; left: var(--x); top: var(--y); z-index: 1; padding: 8px 12px; color: var(--navy-950); background: var(--mint); font: normal 700 0.54em monospace; white-space: nowrap; transform: translate(-50%, -50%); box-shadow: 0 8px 20px rgba(0,0,0,0.24); }
 .concept.math { background: var(--gold); }
 .concept.structure { color: var(--white); background: var(--coral); }
 .concept.muted { opacity: 0.78; }
@@ -763,9 +769,7 @@ $code-block-border-color: #24485d;
 .context-sentence span { position: relative; padding: 9px 12px; z-index: 1; }
 .context-sentence .focus { color: var(--navy-950); background: var(--gold); }
 .context-sentence .target { color: var(--navy-950); background: var(--mint); }
-.attention-links { height: 90px; margin: 0 7%; border-right: 2px solid var(--teal); border-bottom: 2px solid var(--teal); border-left: 2px solid var(--teal); opacity: 0.72; }
-.attention-links i { float: left; width: 33.333%; height: 60px; border-right: 1px solid rgba(85,214,190,0.5); transform: skewX(28deg); }
-.attention-result { display: flex; justify-content: space-between; gap: 28px; margin-top: 15px; font-size: 0.66em; }
+.attention-result { display: flex; justify-content: space-between; gap: 28px; margin-top: 45px; font-size: 0.66em; }
 .attention-result span { color: var(--mint); font-family: monospace; }
 .attention-result b { color: var(--white); }
 
