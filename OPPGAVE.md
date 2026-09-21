@@ -1,7 +1,7 @@
 # Innleveringsoppgave: MatteHjelpen
 
 **Gruppeoppgave. Verktøy: VS Code + KI, for eksempel GitHub Copilot.**
-
+hei
 **Arbeidsperiode:** Oppgaven deles ut mot slutten av forelesning 1. Hovedarbeidet
 gjøres fram mot forelesning 2 *(fyll inn eksakt dato her)*, der erfaringer fra
 arbeidet brukes i undervisningen. **Innleveringsfrist:** *(fyll inn eksakt dato
